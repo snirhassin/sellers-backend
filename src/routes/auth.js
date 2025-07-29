@@ -15,6 +15,11 @@ const prisma = new PrismaClient({
   }
 });
 
+// Test route to verify auth routes are loading
+router.get('/test', (req, res) => {
+  res.json({ message: 'Auth routes are working!' });
+});
+
 console.log('🔐 Auth routes initialized');
 
 router.post('/login', async (req, res) => {

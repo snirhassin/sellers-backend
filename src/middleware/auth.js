@@ -1,7 +1,14 @@
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+// Create Prisma client with explicit URL
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
 
 const authMiddleware = async (req, res, next) => {
   try {
