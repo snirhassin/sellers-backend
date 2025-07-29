@@ -11,6 +11,9 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [updateExisting, setUpdateExisting] = useState(false);
+  const [uploadHistory, setUploadHistory] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [filePreview, setFilePreview] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -33,6 +36,7 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
       if (droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv') || droppedFile.name.endsWith('.xlsx')) {
         setFile(droppedFile);
         setUploadResult(null);
+        previewFile(droppedFile);
       } else {
         alert('Please upload a CSV or Excel file.');
       }
@@ -44,6 +48,34 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
     if (files && files.length > 0) {
       setFile(files[0]);
       setUploadResult(null);
+      previewFile(files[0]);
+    }
+  };
+
+  const previewFile = async (file: File) => {
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      const text = await file.text();
+      const lines = text.split('\n').slice(0, 6); // First 5 rows + header
+      const preview = lines.map(line => line.split(','));
+      setFilePreview(preview);
+      setShowPreview(true);
+    }
+  };
+
+  const fetchUploadHistory = async () => {
+    if (!sellerId) return;
+    
+    try {
+      const response = await fetch(`/api/upload/history/${sellerId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUploadHistory(data.uploads || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch upload history');
     }
   };
 
@@ -270,6 +302,140 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
           </div>
         </div>
       )}
+
+      {/* File Preview */}
+      {showPreview && filePreview.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <h3>👀 File Preview</h3>
+            <button 
+              onClick={() => setShowPreview(false)}
+              style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="card-content">
+            <p style={{ marginBottom: '15px', color: '#7f8c8d' }}>
+              Showing first 5 rows of your file:
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    {filePreview[0]?.map((header, index) => (
+                      <th key={index} style={{ 
+                        padding: '10px', 
+                        border: '1px solid #ddd', 
+                        textAlign: 'left',
+                        fontWeight: 'bold'
+                      }}>
+                        {header?.trim()}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filePreview.slice(1).map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex} style={{ 
+                          padding: '8px 10px', 
+                          border: '1px solid #ddd',
+                          maxWidth: '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {cell?.trim()}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={() => setShowPreview(false)} 
+                className="btn btn-secondary"
+              >
+                Close Preview
+              </button>
+              {file && (
+                <button
+                  onClick={handleUpload}
+                  className="btn btn-primary"
+                  disabled={uploading}
+                >
+                  {uploading ? 'Uploading...' : 'Upload This File'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload History */}
+      <div className="card">
+        <div className="card-header">
+          <h3>📁 Recent Uploads</h3>
+          <button 
+            onClick={fetchUploadHistory}
+            className="btn btn-secondary"
+            style={{ fontSize: '12px' }}
+          >
+            🔄 Refresh
+          </button>
+        </div>
+        <div className="card-content">
+          {uploadHistory.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#7f8c8d' }}>
+              <p>No upload history found.</p>
+              <p style={{ fontSize: '14px' }}>Upload your first file to see history here.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {uploadHistory.slice(0, 5).map((upload, index) => (
+                <div key={index} style={{
+                  padding: '15px',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  backgroundColor: upload.status === 'completed' ? '#f8f9fa' : 
+                                 upload.status === 'failed' ? '#fff5f5' : '#fff3cd'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                        {upload.filename || 'Unknown file'}
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#7f8c8d' }}>
+                        {upload.totalRows || 0} total rows • {upload.successfulImports || 0} successful • {upload.failedImports || 0} failed
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        backgroundColor: upload.status === 'completed' ? '#d4edda' : 
+                                       upload.status === 'failed' ? '#f8d7da' : '#fff3cd',
+                        color: upload.status === 'completed' ? '#155724' : 
+                               upload.status === 'failed' ? '#721c24' : '#856404'
+                      }}>
+                        {upload.status === 'completed' ? '✅ Success' : 
+                         upload.status === 'failed' ? '❌ Failed' : '⏳ Processing'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '5px' }}>
+                        {upload.createdAt ? new Date(upload.createdAt).toLocaleDateString() : 'Unknown date'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* File Format Guide */}
       <div className="card">
