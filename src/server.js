@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+
+// Only load .env in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 // Create Prisma client with explicit URL
 const { PrismaClient } = require('@prisma/client');
