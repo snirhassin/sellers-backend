@@ -37,6 +37,8 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('30');
+  const [selectedMetric, setSelectedMetric] = useState('revenue');
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (sellerId) {
@@ -65,6 +67,29 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
       setError('Network error. Make sure the backend server is running.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportData = (format: 'csv' | 'pdf') => {
+    // Mock export functionality
+    const data = mockAnalytics;
+    if (format === 'csv') {
+      const csvContent = [
+        'Product,ASIN,Market,Revenue,Units,Sales',
+        ...data.topProducts.map(p => 
+          `"${p.productName}",${p.asin},${p.market},${p.revenue},${p.units},${p.salesCount}`
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-${period}days.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      alert('PDF export would be implemented with a library like jsPDF');
     }
   };
 
@@ -133,20 +158,21 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
 
   return (
     <div>
-      {/* Time Period Selector */}
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <label>Time Period:</label>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}
-        >
-          <option value="7">Last 7 Days</option>
+      {/* Analytics Controls */}
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <label>Time Period:</label>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          >
+            <option value="7">Last 7 Days</option>
           <option value="30">Last 30 Days</option>
           <option value="90">Last 90 Days</option>
           <option value="365">Last Year</option>
@@ -154,9 +180,27 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
         <button onClick={fetchAnalytics} className="btn btn-primary">
           🔄 Refresh
         </button>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="btn btn-secondary">📊 Export PDF</button>
-          <button className="btn btn-success" style={{ marginLeft: '10px' }}>📈 Export Excel</button>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => exportData('csv')} 
+            className="btn btn-secondary"
+          >
+            📊 Export CSV
+          </button>
+          <button 
+            onClick={() => exportData('pdf')} 
+            className="btn btn-secondary"
+          >
+            📄 Export PDF
+          </button>
+          <button 
+            onClick={() => setShowDetails(!showDetails)} 
+            className="btn btn-secondary"
+          >
+            {showDetails ? '👁️ Hide' : '👁️ Show'} Details
+          </button>
         </div>
       </div>
 
@@ -457,6 +501,141 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
           </div>
         </div>
       </div>
+
+      {/* Detailed Analytics (conditional) */}
+      {showDetails && (
+        <>
+          {/* Market Breakdown */}
+          <div className="card">
+            <div className="card-header">
+              <h3>🌍 Market Breakdown</h3>
+            </div>
+            <div className="card-content">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                {['US', 'UK', 'DE', 'FR', 'CA'].map(market => (
+                  <div key={market} style={{
+                    padding: '15px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+                      {market}
+                    </div>
+                    <div style={{ fontSize: '18px', color: '#27ae60', marginTop: '5px' }}>
+                      ${(Math.random() * 10000).toFixed(2)}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#7f8c8d', marginTop: '5px' }}>
+                      {Math.floor(Math.random() * 100)} products
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Hourly Performance */}
+          <div className="card">
+            <div className="card-header">
+              <h3>⏰ Performance by Hour (Today)</h3>
+            </div>
+            <div className="card-content">
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'end', height: '200px', padding: '20px' }}>
+                {Array.from({length: 24}, (_, i) => {
+                  const height = Math.random() * 150 + 20;
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                      <div 
+                        style={{
+                          backgroundColor: '#3498db',
+                          width: '100%',
+                          height: `${height}px`,
+                          borderRadius: '2px 2px 0 0',
+                          marginBottom: '5px'
+                        }}
+                        title={`${i}:00 - $${(height * 2).toFixed(0)}`}
+                      />
+                      <div style={{ fontSize: '10px', color: '#7f8c8d' }}>
+                        {i.toString().padStart(2, '0')}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Commission Analysis */}
+          <div className="card">
+            <div className="card-header">
+              <h3>💰 Commission Analysis</h3>
+            </div>
+            <div className="card-content">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <h4>Commission Rates Distribution</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {[
+                      { range: '5-7%', count: 45, percentage: 35 },
+                      { range: '7-9%', count: 67, percentage: 52 },
+                      { range: '9-12%', count: 23, percentage: 18 },
+                      { range: '12%+', count: 8, percentage: 6 }
+                    ].map(item => (
+                      <div key={item.range} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ minWidth: '60px', fontSize: '14px' }}>{item.range}</div>
+                        <div style={{
+                          flex: 1,
+                          height: '20px',
+                          backgroundColor: '#ecf0f1',
+                          borderRadius: '10px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            width: `${item.percentage}%`,
+                            backgroundColor: '#27ae60',
+                            borderRadius: '10px'
+                          }} />
+                        </div>
+                        <div style={{ minWidth: '40px', fontSize: '14px', textAlign: 'right' }}>
+                          {item.count}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4>Top Commission Earners</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {mockAnalytics.topProducts.slice(0, 5).map((product, index) => (
+                      <div key={product.asin} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px',
+                        backgroundColor: index === 0 ? '#d4edda' : '#f8f9fa',
+                        borderRadius: '4px'
+                      }}>
+                        <div style={{ fontSize: '14px' }}>
+                          {product.productName}
+                        </div>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 'bold',
+                          color: '#27ae60'
+                        }}>
+                          ${(parseFloat(product.revenue) * 0.085).toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
