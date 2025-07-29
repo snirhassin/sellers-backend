@@ -1,11 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { PrismaClient } = require('@prisma/client');
-const { exec } = require('child_process');
 require('dotenv').config();
 
-const prisma = new PrismaClient();
+// Create Prisma client with explicit URL
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
 
 const sellerRoutes = require('./routes/sellers');
 const productRoutes = require('./routes/products');
