@@ -103,15 +103,17 @@ app.post('/api/simple-login', async (req, res) => {
 
 // Debug middleware
 app.use('/api', (req, res, next) => {
-  console.log(`API Request: ${req.method} ${req.path}`);
+  console.log(`🔍 API Request: ${req.method} ${req.path}`);
   next();
 });
 
+console.log('🔗 Loading routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
+console.log('✅ Routes loaded successfully');
 
 // Serve static files from React build AFTER API routes
 app.use(express.static(path.join(__dirname, '../frontend/build')));

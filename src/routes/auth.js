@@ -5,7 +5,17 @@ const { PrismaClient } = require('@prisma/client');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
+// Create Prisma client with explicit URL (same as server)
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
+
+console.log('🔐 Auth routes initialized');
 
 router.post('/login', async (req, res) => {
   try {
