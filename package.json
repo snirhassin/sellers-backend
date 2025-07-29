@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "cd frontend && npm install && npm run build && cd .. && prisma generate && prisma db push && npm run db:seed",
+    "build": "cd frontend && npm install && npm run build && cd .. && prisma generate",
+    "railway:deploy": "prisma db push && npm run db:seed",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",

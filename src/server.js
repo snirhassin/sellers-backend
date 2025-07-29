@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { PrismaClient } = require('@prisma/client');
+const { exec } = require('child_process');
 require('dotenv').config();
+
+const prisma = new PrismaClient();
 
 const sellerRoutes = require('./routes/sellers');
 const productRoutes = require('./routes/products');
@@ -60,7 +64,38 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
 });
 
-app.listen(PORT, () => {
+// Database initialization function
+async function initializeDatabase() {
+  try {
+    console.log('Checking database connection...');
+    await prisma.$connect();
+    
+    // Check if users table has any data
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log('Database appears empty, running initial setup...');
+      
+      // Run database push and seed
+      exec('npx prisma db push && npm run db:seed', (error, stdout, stderr) => {
+        if (error) {
+          console.error('Database setup error:', error);
+        } else {
+          console.log('Database setup completed successfully');
+          console.log(stdout);
+        }
+      });
+    } else {
+      console.log(`Database already initialized with ${userCount} users`);
+    }
+  } catch (error) {
+    console.error('Database initialization error:', error);
+  }
+}
+
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Initialize database on startup
+  await initializeDatabase();
 });
