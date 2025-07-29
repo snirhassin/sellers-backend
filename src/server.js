@@ -126,28 +126,37 @@ app.get('*', (req, res) => {
 // Database initialization function
 async function initializeDatabase() {
   try {
+    console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
     console.log('Checking database connection...');
-    await prisma.$connect();
     
-    // Check if users table has any data
-    const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      console.log('Database appears empty, running initial setup...');
-      
-      // Run database push and seed
-      exec('npx prisma db push && npm run db:seed', (error, stdout, stderr) => {
-        if (error) {
-          console.error('Database setup error:', error);
-        } else {
-          console.log('Database setup completed successfully');
-          console.log(stdout);
-        }
-      });
-    } else {
+    // Test connection first
+    await prisma.$connect();
+    console.log('Database connection successful');
+    
+    // Check if tables exist by trying to count users
+    try {
+      const userCount = await prisma.user.count();
       console.log(`Database already initialized with ${userCount} users`);
+    } catch (error) {
+      console.log('Tables do not exist, initializing database...');
+      
+      // Run database setup synchronously
+      const { execSync } = require('child_process');
+      try {
+        console.log('Running prisma db push...');
+        execSync('npx prisma db push --force-reset', { stdio: 'inherit' });
+        
+        console.log('Running database seed...');
+        execSync('npm run db:seed', { stdio: 'inherit' });
+        
+        console.log('Database setup completed successfully');
+      } catch (setupError) {
+        console.error('Database setup failed:', setupError);
+      }
     }
   } catch (error) {
     console.error('Database initialization error:', error);
+    console.error('DATABASE_URL:', process.env.DATABASE_URL ? 'is set' : 'is NOT set');
   }
 }
 
