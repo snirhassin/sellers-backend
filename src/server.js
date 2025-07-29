@@ -159,7 +159,7 @@ async function testDatabase() {
 }
 
 app.listen(PORT, async () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   
   // Test database connection
