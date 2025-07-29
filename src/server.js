@@ -40,22 +40,53 @@ app.get('/health', (req, res) => {
 });
 
 // Test login endpoint
-app.post('/api/test-login', async (req, res) => {
+app.get('/api/test-auth', async (req, res) => {
   try {
-    console.log('Test login request received');
-    console.log('Request body:', req.body);
+    console.log('Test auth request received');
     console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
     console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
     
     const userCount = await prisma.user.count();
+    const users = await prisma.user.findMany({
+      select: { email: true, role: true, isActive: true }
+    });
+    
     res.json({ 
-      message: 'Test login endpoint working',
+      message: 'Test auth endpoint working',
       userCount: userCount,
+      users: users,
       hasDatabase: !!process.env.DATABASE_URL,
       hasJWT: !!process.env.JWT_SECRET
     });
   } catch (error) {
-    console.error('Test login error:', error);
+    console.error('Test auth error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Simple test login
+app.post('/api/simple-login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Simple login attempt:', email);
+    
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const bcrypt = require('bcryptjs');
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    
+    res.json({
+      success: isValid,
+      user: isValid ? { email: user.email, role: user.role } : null
+    });
+  } catch (error) {
+    console.error('Simple login error:', error);
     res.status(500).json({ error: error.message });
   }
 });
