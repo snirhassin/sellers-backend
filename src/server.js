@@ -123,40 +123,28 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
 });
 
-// Database initialization function
-async function initializeDatabase() {
+// Simple database test function
+async function testDatabase() {
   try {
-    console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
-    console.log('Checking database connection...');
+    console.log('=== DATABASE DEBUG INFO ===');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('DATABASE_URL preview:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : 'NOT SET');
+    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
     
-    // Test connection first
+    // Try to connect
+    console.log('Testing database connection...');
     await prisma.$connect();
-    console.log('Database connection successful');
+    console.log('✅ Database connection successful');
     
-    // Check if tables exist by trying to count users
-    try {
-      const userCount = await prisma.user.count();
-      console.log(`Database already initialized with ${userCount} users`);
-    } catch (error) {
-      console.log('Tables do not exist, initializing database...');
-      
-      // Run database setup synchronously
-      const { execSync } = require('child_process');
-      try {
-        console.log('Running prisma db push...');
-        execSync('npx prisma db push --force-reset', { stdio: 'inherit' });
-        
-        console.log('Running database seed...');
-        execSync('npm run db:seed', { stdio: 'inherit' });
-        
-        console.log('Database setup completed successfully');
-      } catch (setupError) {
-        console.error('Database setup failed:', setupError);
-      }
-    }
+    // Try a simple query
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    console.log('✅ Database query successful:', result);
+    
+    return true;
   } catch (error) {
-    console.error('Database initialization error:', error);
-    console.error('DATABASE_URL:', process.env.DATABASE_URL ? 'is set' : 'is NOT set');
+    console.error('❌ Database connection failed:', error.message);
+    return false;
   }
 }
 
@@ -164,6 +152,6 @@ app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   
-  // Initialize database on startup
-  await initializeDatabase();
+  // Test database connection
+  await testDatabase();
 });
