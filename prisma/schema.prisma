@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Seller {
+  id                     String   @id @default(uuid())
+  companyName           String   @map("company_name")
+  contactEmail          String   @unique @map("contact_email")
+  contactPhone          String?  @map("contact_phone")
+  contactPerson         String?  @map("contact_person")
+  defaultCommissionRate Decimal  @default(7.50) @map("default_commission_rate") @db.Decimal(5, 2)
+  status                String   @default("active") @map("status")
+  notes                 String?
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  products      Product[]
+  uploadBatches UploadBatch[]
+  users         User[]
+
+  @@map("sellers")
+}
+
+model UploadBatch {
+  id                String   @id @default(uuid())
+  sellerId          String   @map("seller_id")
+  filename          String
+  originalFilename  String   @map("original_filename")
+  totalRows         Int      @default(0) @map("total_rows")
+  successfulImports Int      @default(0) @map("successful_imports")
+  failedImports     Int      @default(0) @map("failed_imports")
+  status            String   @default("processing") @map("status")
+  errorLog          String?  @map("error_log")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  seller   Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("upload_batches")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  sellerId        String   @map("seller_id")
+  uploadBatchId   String?  @map("upload_batch_id")
+  asin            String
+  market          String
+  productName     String   @map("product_name")
+  description     String?
+  price           Decimal? @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  commissionRate  Decimal  @map("commission_rate") @db.Decimal(5, 2)
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  seller      Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  uploadBatch UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
+  salesData   SalesData[]
+
+  @@unique([sellerId, asin, market])
+  @@map("products")
+}
+
+model SalesData {
+  id               String   @id @default(uuid())
+  productId        String   @map("product_id")
+  saleDate         DateTime @map("sale_date") @db.Date
+  quantitySold     Int      @default(1) @map("quantity_sold")
+  unitPrice        Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalRevenue     Decimal  @map("total_revenue") @db.Decimal(12, 2)
+  commissionEarned Decimal  @map("commission_earned") @db.Decimal(12, 2)
+  currency         String   @default("USD")
+  orderId          String?  @map("order_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("sales_data")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
+  role         String    @default("operator")
+  sellerId     String?   @map("seller_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  seller Seller? @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+
+  @@map("users")
+}
