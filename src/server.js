@@ -20,9 +20,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
 // API info endpoint
 app.get('/api', (req, res) => {
   res.json({ 
@@ -74,6 +71,9 @@ app.use('/api/sellers', sellerRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// Serve static files from React build AFTER API routes
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
