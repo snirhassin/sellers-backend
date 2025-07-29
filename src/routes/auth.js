@@ -24,23 +24,36 @@ console.log('🔐 Auth routes initialized');
 
 router.post('/login', async (req, res) => {
   try {
+    console.log('🔐 Login attempt received');
     const { email, password } = req.body;
+    console.log('📧 Email:', email);
+    console.log('🔑 Password length:', password ? password.length : 'undefined');
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    console.log('🔍 Looking up user in database...');
     const user = await prisma.user.findUnique({
       where: { email },
       include: { seller: true }
     });
 
+    console.log('👤 User found:', !!user);
+    console.log('✅ User active:', user ? user.isActive : 'N/A');
+
     if (!user || !user.isActive) {
+      console.log('❌ User not found or inactive');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    console.log('🔐 Checking password...');
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    console.log('🔑 Password valid:', isValidPassword);
+    
     if (!isValidPassword) {
+      console.log('❌ Invalid password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -49,6 +62,7 @@ router.post('/login', async (req, res) => {
       data: { lastLogin: new Date() }
     });
 
+    console.log('🎫 Creating JWT token...');
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -60,6 +74,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    console.log('✅ Login successful!');
     res.json({
       token,
       user: {
@@ -72,7 +87,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
