@@ -23,7 +23,8 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from React build
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-app.get('/', (req, res) => {
+// API info endpoint
+app.get('/api', (req, res) => {
   res.json({ 
     message: 'Sellers Backend API is running!',
     version: '1.0.0',
@@ -39,6 +40,33 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Test login endpoint
+app.post('/api/test-login', async (req, res) => {
+  try {
+    console.log('Test login request received');
+    console.log('Request body:', req.body);
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+    
+    const userCount = await prisma.user.count();
+    res.json({ 
+      message: 'Test login endpoint working',
+      userCount: userCount,
+      hasDatabase: !!process.env.DATABASE_URL,
+      hasJWT: !!process.env.JWT_SECRET
+    });
+  } catch (error) {
+    console.error('Test login error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug middleware
+app.use('/api', (req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.path}`);
+  next();
 });
 
 app.use('/api/auth', authRoutes);
