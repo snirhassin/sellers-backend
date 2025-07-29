@@ -13,8 +13,8 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@company.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('snir.hassin@gmail.com');
+  const [password, setPassword] = useState('moty22');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,9 +83,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {error && <div className="error-message">{error}</div>}
 
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px', fontSize: '14px' }}>
-          <strong>Demo Credentials:</strong><br />
-          Admin: admin@company.com / password123<br />
-          Operator: operator@company.com / password123
+          <strong>Available Credentials:</strong><br />
+          Custom Admin: snir.hassin@gmail.com / moty22<br />
+          Demo Admin: admin@company.com / password123<br />
+          Demo Operator: operator@company.com / password123
         </div>
       </form>
     </div>
