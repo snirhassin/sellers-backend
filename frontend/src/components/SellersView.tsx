@@ -26,6 +26,16 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSeller, setEditingSeller] = useState<Seller | null>(null);
+  const [newSeller, setNewSeller] = useState({
+    companyName: '',
+    contactEmail: '',
+    contactPhone: '',
+    contactPerson: '',
+    defaultCommissionRate: 7.5,
+    status: 'active'
+  });
 
   useEffect(() => {
     fetchSellers();
@@ -34,7 +44,7 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
   const fetchSellers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/sellers', {
+      const response = await fetch('/api/sellers', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -51,6 +61,108 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddSeller = async () => {
+    try {
+      const response = await fetch('/api/sellers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newSeller),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setSellers([...sellers, result.seller]);
+        setShowAddModal(false);
+        setNewSeller({
+          companyName: '',
+          contactEmail: '',
+          contactPhone: '',
+          contactPerson: '',
+          defaultCommissionRate: 7.5,
+          status: 'active'
+        });
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to add seller');
+      }
+    } catch (err) {
+      setError('Network error while adding seller');
+    }
+  };
+
+  const handleEditSeller = async () => {
+    if (!editingSeller) return;
+    
+    try {
+      const response = await fetch(`/api/sellers/${editingSeller.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newSeller),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setSellers(sellers.map(s => s.id === editingSeller.id ? result.seller : s));
+        setEditingSeller(null);
+        setNewSeller({
+          companyName: '',
+          contactEmail: '',
+          contactPhone: '',
+          contactPerson: '',
+          defaultCommissionRate: 7.5,
+          status: 'active'
+        });
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update seller');
+      }
+    } catch (err) {
+      setError('Network error while updating seller');
+    }
+  };
+
+  const handleDeleteSeller = async (sellerId: string) => {
+    if (!confirm('Are you sure you want to delete this seller? This will also delete all their products.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sellers/${sellerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setSellers(sellers.filter(s => s.id !== sellerId));
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete seller');
+      }
+    } catch (err) {
+      setError('Network error while deleting seller');
+    }
+  };
+
+  const openEditModal = (seller: Seller) => {
+    setEditingSeller(seller);
+    setNewSeller({
+      companyName: seller.companyName,
+      contactEmail: seller.contactEmail,
+      contactPhone: seller.contactPhone || '',
+      contactPerson: seller.contactPerson || '',
+      defaultCommissionRate: seller.defaultCommissionRate,
+      status: seller.status
+    });
   };
 
   const filteredSellers = sellers.filter(seller => {
@@ -136,6 +248,9 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
             <button onClick={fetchSellers} className="btn btn-primary">
               🔄 Refresh
             </button>
+            <button onClick={() => setShowAddModal(true)} className="btn btn-success">
+              ➕ Add Seller
+            </button>
           </div>
         </div>
       </div>
@@ -220,13 +335,29 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
                         </span>
                       </td>
                       <td>
-                        <button
-                          onClick={() => onSelectSeller(seller.id)}
-                          className="btn btn-primary"
-                          style={{ fontSize: '12px' }}
-                        >
-                          Manage
-                        </button>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          <button
+                            onClick={() => onSelectSeller(seller.id)}
+                            className="btn btn-primary"
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => openEditModal(seller)}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSeller(seller.id)}
+                            className="btn btn-danger"
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                          >
+                            Del
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -236,6 +367,170 @@ const SellersView: React.FC<SellersViewProps> = ({ token, onSelectSeller }) => {
           )}
         </div>
       </div>
+
+      {/* Add/Edit Seller Modal */}
+      {(showAddModal || editingSeller) && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '8px',
+            width: '500px',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h3>{editingSeller ? 'Edit Seller' : 'Add New Seller'}</h3>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Company Name *
+              </label>
+              <input
+                type="text"
+                value={newSeller.companyName}
+                onChange={(e) => setNewSeller({...newSeller, companyName: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Contact Email *
+              </label>
+              <input
+                type="email"
+                value={newSeller.contactEmail}
+                onChange={(e) => setNewSeller({...newSeller, contactEmail: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Contact Person
+              </label>
+              <input
+                type="text"
+                value={newSeller.contactPerson}
+                onChange={(e) => setNewSeller({...newSeller, contactPerson: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Contact Phone
+              </label>
+              <input
+                type="tel"
+                value={newSeller.contactPhone}
+                onChange={(e) => setNewSeller({...newSeller, contactPhone: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Default Commission Rate (%)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={newSeller.defaultCommissionRate}
+                onChange={(e) => setNewSeller({...newSeller, defaultCommissionRate: parseFloat(e.target.value)})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Status
+              </label>
+              <select
+                value={newSeller.status}
+                onChange={(e) => setNewSeller({...newSeller, status: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingSeller(null);
+                  setNewSeller({
+                    companyName: '',
+                    contactEmail: '',
+                    contactPhone: '',
+                    contactPerson: '',
+                    defaultCommissionRate: 7.5,
+                    status: 'active'
+                  });
+                }}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingSeller ? handleEditSeller : handleAddSeller}
+                className="btn btn-primary"
+                disabled={!newSeller.companyName || !newSeller.contactEmail}
+              >
+                {editingSeller ? 'Update' : 'Add'} Seller
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -49,7 +49,7 @@ const AnalyticsView: React.FC<AnalyticsViewProps> = ({ token, sellerId }) => {
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/analytics/seller/${sellerId}/dashboard?period=${period}`, {
+      const response = await fetch(`/api/analytics/seller/${sellerId}/dashboard?period=${period}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

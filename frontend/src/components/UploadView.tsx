@@ -56,7 +56,7 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
     formData.append('updateExisting', updateExisting.toString());
 
     try {
-      const response = await fetch(`http://localhost:3000/api/upload/${sellerId}`, {
+      const response = await fetch(`/api/upload/${sellerId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,7 +84,7 @@ const UploadView: React.FC<UploadViewProps> = ({ token, sellerId }) => {
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/upload/template');
+      const response = await fetch('/api/upload/template');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

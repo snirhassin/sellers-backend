@@ -43,7 +43,7 @@ const ProductsView: React.FC<ProductsViewProps> = ({ token, sellerId, onBack }) 
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/products/seller/${sellerId}`, {
+      const response = await fetch(`/api/products/seller/${sellerId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -66,7 +66,7 @@ const ProductsView: React.FC<ProductsViewProps> = ({ token, sellerId, onBack }) 
     if (!sellerId) return;
     
     try {
-      const response = await fetch(`http://localhost:3000/api/sellers/${sellerId}`, {
+      const response = await fetch(`/api/sellers/${sellerId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
