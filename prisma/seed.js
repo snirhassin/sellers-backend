@@ -64,6 +64,19 @@ async function main() {
     },
   });
 
+  // Create custom user
+  const customHashedPassword = await bcrypt.hash('moty22', 10);
+  await prisma.user.create({
+    data: {
+      email: 'snir.hassin@gmail.com',
+      passwordHash: customHashedPassword,
+      firstName: 'Snir',
+      lastName: 'Hassin',
+      role: 'admin',
+      isActive: true,
+    },
+  });
+
   const uploadBatch1 = await prisma.uploadBatch.create({
     data: {
       sellerId: seller1.id,
@@ -195,6 +208,7 @@ async function main() {
   console.log('\nDefault login credentials:');
   console.log('Admin: admin@company.com / password123');
   console.log('Operator: operator@company.com / password123');
+  console.log('Custom Admin: snir.hassin@gmail.com / moty22');
 }
 
 main()
